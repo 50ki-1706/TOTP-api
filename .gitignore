@@ -1,0 +1,15 @@
+# Environment variables
+.env
+.env.local
+
+# Deno
+.deno/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+qrcode.html

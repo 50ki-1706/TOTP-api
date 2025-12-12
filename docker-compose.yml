@@ -1,0 +1,57 @@
+services:
+  # Redisサービス
+  redis:
+    image: redis:latest
+    container_name: totp-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - totp-network
+
+  # APIサーバー
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: totp-api
+    ports:
+      - '8000:8000'
+    environment:
+      # Server
+      - PORT=8000
+      - ENVIRONMENT=development
+
+      # Redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+      # TOTP Configuration
+      - MAX_VERIFICATION_ATTEMPTS=3
+      - LOCKOUT_DURATION_SECONDS=300
+
+      # Application Info
+      - APP_NAME=TOTP-Auth-API
+      - APP_ISSUER=MyApp
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+    networks:
+      - totp-network
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+
+networks:
+  totp-network:
+    driver: bridge
