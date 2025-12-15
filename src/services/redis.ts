@@ -19,53 +19,14 @@ export async function getRedisClient(): Promise<Redis> {
 }
 
 /**
- * OTPをRedisに保存
- */
-export async function setOTP(phoneNumber: string, otp: string, ttl: number): Promise<void> {
-  const client = await getRedisClient();
-  const key = `otp:${phoneNumber}`;
-  await client.setex(key, ttl, otp);
-  console.log(`💾 OTP saved for ${phoneNumber} (TTL: ${ttl}s)`);
-}
-
-/**
- * RedisからOTPを取得
- */
-export async function getOTP(phoneNumber: string): Promise<string | null> {
-  const client = await getRedisClient();
-  const key = `otp:${phoneNumber}`;
-  const otp = await client.get(key);
-  return otp || null;
-}
-
-/**
- * OTPを削除（使用済み）
- */
-export async function deleteOTP(phoneNumber: string): Promise<void> {
-  const client = await getRedisClient();
-  const key = `otp:${phoneNumber}`;
-  await client.del(key);
-  console.log(`🗑️  OTP deleted for ${phoneNumber}`);
-}
-
-/**
- * OTPの残り有効時間を取得
- */
-export async function getOTPTTL(phoneNumber: string): Promise<number> {
-  const client = await getRedisClient();
-  const key = `otp:${phoneNumber}`;
-  return await client.ttl(key);
-}
-
-/**
  * 検証試行回数をインクリメント
  */
-export async function incrementAttempts(phoneNumber: string): Promise<number> {
+export async function incrementAttempts(username: string): Promise<number> {
   const client = await getRedisClient();
-  const key = `attempt:${phoneNumber}`;
-  
+  const key = `attempt:${username}`;
+
   const exists = await client.exists(key);
-  
+
   if (!exists) {
     // 初回: カウンターを作成
     await client.setex(key, config.otp.lockoutDuration, "1");
@@ -80,9 +41,9 @@ export async function incrementAttempts(phoneNumber: string): Promise<number> {
 /**
  * 検証試行回数を取得
  */
-export async function getAttempts(phoneNumber: string): Promise<number> {
+export async function getAttempts(username: string): Promise<number> {
   const client = await getRedisClient();
-  const key = `attempt:${phoneNumber}`;
+  const key = `attempt:${username}`;
   const attempts = await client.get(key);
   return attempts ? parseInt(attempts) : 0;
 }
@@ -90,19 +51,19 @@ export async function getAttempts(phoneNumber: string): Promise<number> {
 /**
  * 検証試行回数をリセット
  */
-export async function resetAttempts(phoneNumber: string): Promise<void> {
+export async function resetAttempts(username: string): Promise<void> {
   const client = await getRedisClient();
-  const key = `attempt:${phoneNumber}`;
+  const key = `attempt:${username}`;
   await client.del(key);
-  console.log(`🔄 Attempts reset for ${phoneNumber}`);
+  console.log(`🔄 Attempts reset for ${username}`);
 }
 
 /**
  * ロックアウト残り時間を取得
  */
-export async function getLockoutTTL(phoneNumber: string): Promise<number> {
+export async function getLockoutTTL(username: string): Promise<number> {
   const client = await getRedisClient();
-  const key = `attempt:${phoneNumber}`;
+  const key = `attempt:${username}`;
   return await client.ttl(key);
 }
 
