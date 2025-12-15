@@ -43,14 +43,53 @@ TOTP（Time-based One-Time Password）は、時間ベースのワンタイムパ
 
 ## 🛠️ セットアップ
 
-### 1. リポジトリをクローン
+### オプション 1: Docker Hub から取得（推奨）
+
+最も簡単な方法は、Docker Hub から公開イメージを使用することです：
+
+```bash
+# Docker Hubから最新のイメージを取得して実行
+docker pull <dockerhub-username>/totp-api:latest
+
+# Redisと一緒に起動
+docker network create totp-network
+docker run -d --name redis --network totp-network redis:alpine
+docker run -d --name totp-api \
+  --network totp-network \
+  -p 8000:8000 \
+  -e REDIS_HOST=redis \
+  <dockerhub-username>/totp-api:latest
+```
+
+または、docker-compose.yml を使用：
+
+```yaml
+version: '3.8'
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - '6379:6379'
+  api:
+    image: <dockerhub-username>/totp-api:latest
+    ports:
+      - '8000:8000'
+    environment:
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+```
+
+### オプション 2: ソースからビルド
+
+#### 1. リポジトリをクローン
 
 ```bash
 git clone <repository-url>
 cd totp-api
 ```
 
-### 2. Docker Compose で起動
+#### 2. Docker Compose で起動
 
 ```bash
 docker compose up --build
@@ -317,7 +356,52 @@ deno task dev
 | `APP_NAME`                  | TOTP-Auth-API | アプリ名（Google Authenticator 表示用） |
 | `APP_ISSUER`                | MyApp         | 発行者名                                |
 
+## 🐳 Docker Hub へのデプロイ
+
+このプロジェクトは GitHub Actions を使用して Docker Hub に自動的にデプロイされます。
+
+### 初回セットアップ
+
+1. **Docker Hub アカウントを作成**
+
+   - [Docker Hub](https://hub.docker.com/) でアカウントを作成
+
+2. **Docker Hub アクセストークンを生成**
+
+   - Docker Hub にログイン
+   - Account Settings → Security → New Access Token
+   - トークンをコピー（後で使用）
+
+3. **GitHub Secrets を設定**
+   - GitHub リポジトリ → Settings → Secrets and variables → Actions
+   - 以下の 2 つの Secret を追加：
+     - `DOCKERHUB_USERNAME`: Docker Hub のユーザー名
+     - `DOCKERHUB_TOKEN`: 上記で生成したアクセストークン
+
+### 自動デプロイ
+
+以下の場合に自動的に Docker Hub にデプロイされます：
+
+- `main` ブランチに push した時 → `latest` タグでデプロイ
+- `v1.0.0` のようなバージョンタグを push した時 → バージョンタグでデプロイ
+
+```bash
+# 例: バージョンタグを作成してデプロイ
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+### 手動デプロイ
+
+GitHub Actions の画面から手動で実行することも可能です：
+
+1. リポジトリの Actions タブを開く
+2. "Docker Hub Publish" ワークフローを選択
+3. "Run workflow" をクリック
+
 ## 🐳 Docker コマンド
+
+### ローカル開発用
 
 ```bash
 # ビルド & 起動
@@ -328,6 +412,7 @@ docker compose up -d
 
 # ログを表示
 docker compose logs -f api
+
 # 停止
 docker compose down
 
@@ -335,16 +420,23 @@ docker compose down
 docker compose down -v
 ```
 
-## 🆚 SMS OTP vs TOTP
+### Docker Hub イメージを使用
 
-| 項目               | SMS OTP              | TOTP                   |
-| ------------------ | -------------------- | ---------------------- |
-| **必要なもの**     | 電話番号             | スマートフォン         |
-| **外部依存**       | SMS API（Twilio 等） | なし                   |
-| **コスト**         | 1 通あたり課金       | 無料                   |
-| **オフライン**     | 不可                 | 可能                   |
-| **セキュリティ**   | SIM swap 攻撃に脆弱  | より安全               |
-| **ユーザビリティ** | 簡単                 | アプリインストール必要 |
+```bash
+# イメージを取得
+docker pull <dockerhub-username>/totp-api:latest
+
+# イメージの確認
+docker images | grep totp-api
+
+# コンテナ起動（Redisも必要）
+docker run -d --name redis redis:alpine
+docker run -d --name totp-api \
+  --link redis:redis \
+  -p 8000:8000 \
+  -e REDIS_HOST=redis \
+  <dockerhub-username>/totp-api:latest
+```
 
 ## 📚 参考資料
 

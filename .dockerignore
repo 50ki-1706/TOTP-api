@@ -1,0 +1,29 @@
+# Git
+.git
+.gitignore
+.github
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+README.md
+*.md
+
+# Test files
+test-totp.sh
+qrcode.html
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*~

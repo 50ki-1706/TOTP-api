@@ -60,20 +60,6 @@ export function verifyTOTP(secret: string, token: string, window: number = 1): b
 }
 
 /**
- * 現在のTOTPトークンを生成（デバッグ用）
- */
-export function generateCurrentToken(secret: string): string {
-  const totp = new OTPAuth.TOTP({
-    algorithm: 'SHA1',
-    digits: 6,
-    period: 30,
-    secret: secret,
-  });
-
-  return totp.generate();
-}
-
-/**
  * TOTPトークンのフォーマットをバリデーション
  */
 export function validateTOTPFormat(token: string): boolean {
